@@ -1,55 +1,52 @@
-import pandas as pd
+import sys
 from flask import Flask, request, jsonify
+import csv_parser
+ 
+
 
 app = Flask(__name__)
 
 @app.route('/parse', methods=['POST'])
 def parse_csv():
+    """
+    Parses a CSV file provided by the frontend and returns the data as JSON.
+
+    Args:
+        None
+
+    Returns:
+        dict: JSON dictionary containing the parsed data, or an error message.
+    """
     try:
         # Get CSV/XLS data from the frontend
         file_data = request.form.get('fileData')
         if not file_data:
             return jsonify({'error': 'No CSV file provided.'}), 400
 
-        # Parse the file using Pandas
-        df = pd.read_excel(file_data)
+        # Define the required columns
+        required_columns = [
+            'Action(SiteID=US|Country=US|Currency=USD|Version=941)',
+            'Category ID',
+            'Custom Label (SKU)',
+            'Relationship',
+            'Relationship details',
+            'P:UPC',
+            'Quantity',
+            'Start Price',
+            'Item photo URL.',
+            'P:EAN',
+            'P:EPID',
+        ]
 
-        # Get column names from the DataFrame
-        column_names = df.columns.tolist()
+        # Parse the CSV data using the csv_parser function
+        parsed_data = csv_parser.parse_csv(file_data, required_columns)
+        if 'error' in parsed_data:
+            return jsonify({'error': parsed_data['error']}), 400
 
-        # Controlla se le colonne richieste sono presenti
-        required_columns = ['Action(SiteID=US|Country=US|Currency=USD|Version=941)', 'Category ID', 'Custom Label (SKU)', 'Relationship', 'Relationship details', 'P:UPC', 'Quantity', 'Start Price', 'Item photo URL.', 'P:EAN', 'P:EPID']
-        missing_columns = set(required_columns) - set(column_names)
-        if missing_columns:
-            return jsonify({'error': f'Missing columns: {", ".join(missing_columns)}'}), 400
+        return jsonify(parsed_data), 200
 
-        # Extract the desired columns
-        data = {
-            'action': df['Action(SiteID=US|Country=US|Currency=USD|Version=941)'].tolist(),
-            'category_id': df['Category ID'].tolist(),
-            'custom_label': df['Custom Label (SKU)'].tolist(),
-            'relationship': df['Relationship'].tolist(),
-            'relationship_details': df['Relationship details'].tolist(),
-            'upc': df['P:UPC'].tolist(),
-            'quantity': df['Quantity'].tolist(),
-            'start_price': df['Start Price'].tolist(),
-            'item_photo_url': df['Item photo URL.'].tolist(),
-            'ean': df['P:EAN'].tolist(),
-            'epid': df['P:EPID'].tolist(),
-        }
-
-        # Return the data as JSON
-        return jsonify(data), 200
-
-    except FileNotFoundError:
-        return jsonify({'error': 'CSV file not found.'}), 404
-    except pd.errors.EmptyDataError:
-        return jsonify({'error': 'CSV file is empty.'}), 400
-    except KeyError as e:
-        return jsonify({'error': f'Column not found: {e}'}), 400
     except Exception as e:
         return jsonify({'error': f'Error during parsing: {e}'}), 500
 
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=3000, debug=True)
