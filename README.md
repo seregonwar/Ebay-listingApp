@@ -22,7 +22,7 @@ ebay-listing-app/
 │   ├── src/
 │   │   ├── App.js
 │   │   ├── components/
-│   │   │   ├── FileUpload.js
+│   │   │   ├── FileUpload.jsx
 │   │   │   ├── ListingPreview.js
 │   │   │   ├── CodeEditor.js
 │   │   │   └── ...
